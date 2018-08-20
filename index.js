@@ -8,12 +8,14 @@ const CONVERT_SINGLE = 'Convert epub to bigger texts';
 const CONVERT_BY_CHAPTER = 'Convert epub to text by chapter';
 const RENAME_ALL_TEXT_FILES = 'Rename all text files';
 const SPLIT_TEXT_FILES = 'Split txts';
+const SPLIT_TEXT_BY_NEWLINE = 'Split txts by newline';
 
 const BIG_SIZE = 50000;
 const SMALL_SIZE = 5000;
 
 const OUTPUT_BIG_FOLDER = 'big';
 const OUTPUT_SMALL_FOLDER = 'small';
+const OUTPUT_NEWLINE_FOLDER = 'line';
 
 const question = [
   {
@@ -24,7 +26,8 @@ const question = [
       CONVERT_SINGLE,
       CONVERT_BY_CHAPTER,
       RENAME_ALL_TEXT_FILES,
-      SPLIT_TEXT_FILES
+      SPLIT_TEXT_FILES,
+      SPLIT_TEXT_BY_NEWLINE
     ]
   }
 ];
@@ -43,6 +46,9 @@ const askPrompt = async (epubFile) => {
   if (!fs.existsSync(rootFolder + '/' + OUTPUT_SMALL_FOLDER)) {
     fs.mkdirSync(rootFolder + '/' + OUTPUT_SMALL_FOLDER);
   }
+  if (!fs.existsSync(rootFolder + '/' + OUTPUT_NEWLINE_FOLDER)) {
+    fs.mkdirSync(rootFolder + '/' + OUTPUT_NEWLINE_FOLDER);
+  }
   
   const answers = await inquirer.prompt(question);
   
@@ -58,6 +64,9 @@ const askPrompt = async (epubFile) => {
       break;
     case SPLIT_TEXT_FILES:
       split(rootFolder);
+      break;
+    case SPLIT_TEXT_BY_NEWLINE:
+      splitByNewLine(rootFolder);
       break;
   }
   askPrompt(epubFile);
@@ -162,6 +171,25 @@ function split(rootFolder) {
         fs.writeFileSync(`${rootFolder}/${OUTPUT_SMALL_FOLDER}/${fileName}+${startIndex}.txt`, splitted);
         startIndex = startIndex + 1;
       }
+    }
+  });
+}
+
+function splitByNewLine(rootFolder) {
+  fs.readdirSync(`${rootFolder}/${OUTPUT_SMALL_FOLDER}`).forEach((file) => {
+    if (file.endsWith('.txt')) {
+      let rl = require('readline').createInterface({
+        input: fs.createReadStream(`${rootFolder}/${OUTPUT_SMALL_FOLDER}/${file}`)
+      });
+      let startIndex = 0;
+      const fileName = path.basename(file, '.txt');
+      rl.on('line', line => {
+        console.log(line.length);
+        if(line.length > 120){
+          fs.writeFileSync(`${rootFolder}/${OUTPUT_NEWLINE_FOLDER}/${fileName}+${startIndex}.txt`, line);
+          startIndex = startIndex + 1;
+        }
+      });
     }
   });
 }
